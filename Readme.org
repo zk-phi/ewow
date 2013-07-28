@@ -19,6 +19,11 @@
 Just download the compiled binary and run it. You may exit EWOW from
 tasktray icon. Keybinds are basically the same as Emacs.
 
+** Known Limitations
+
++ mouse clicks are not recorded in macro
++ command "goto-line" is not compatible with macro
+
 ** Customization
 
 Put all source files in the same directory, and modify
