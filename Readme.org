@@ -1,0 +1,26 @@
+* EWOW -- Emads Way of Operating Windows
+** Features
+
++ allows Emacs-like keybinds (almost) everywhere on Windows
++ some commands that Windows does not support are supported
+  - word-wise operations
+  - kill-line
+  - jump to the line-number
+  - transpose chars, words, lines
+  - auto insertion of parens
+  - and so on ...
++ prefix digit-argument is available for some commands
+  - ex. C-3 C-n -> go 3 lines down
++ Emacs-style region selection (ie. mark)
++ and even KEYBOARD MACROS !
+
+** Usage
+
+Just download the compiled binary and run it. You may exit EWOW from
+tasktray icon. Keybinds are basically the same as Emacs.
+
+** Customization
+
+Put all source files in the same directory, and modify
+"default_setting.ahk". Then compile it.
+
