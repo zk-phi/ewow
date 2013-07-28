@@ -36,8 +36,8 @@ after_display_transition_hook()
 #Include lib_autopair.ahk
 
 ;;
-;; After load libraries, you may do some customizations.
-;; Examples are given below:
+;; After load libraries, you may do customizations.
+;; Some examples are given below:
 ;;
 
 ;; enable following keybinds only when
@@ -60,6 +60,8 @@ after_display_transition_hook()
 ;;
 ;; At last, load "keybinds.ahk" to enable default bindings for other keys.
 ;; This must be loaded AT LAST so that default bindings are given least priority.
+;;
+;; The list of available commands, and default keybinds are also found in the file.
 ;;
 
 #Include keybinds.ahk

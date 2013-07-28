@@ -1,4 +1,4 @@
-* EWOW -- Emads Way of Operating Windows
+* EWOW -- Emacs Way of Operating Windows
 ** Features
 
 + allows Emacs-like keybinds (almost) everywhere on Windows
