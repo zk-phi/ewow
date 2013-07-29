@@ -1,130 +1,229 @@
 ;; This script provides: emacs-like simple commands
 
-;; -----------
-;; fundamental
-;; -----------
+;; ---------
+;; utilities
+;; ---------
 
-;; do nothing
-ignore()
+safe_cut()
 {
-    reset_cx()
-    get_argument()
+    ClipBoard =
+    send("^x")
+    ClipWait, 0.5
 }
+
+;; ---------------
+;; command schemes
+;; ---------------
+
+command_simple(str, change, trnas, repeat)
+{ Global
+    run_hooks("pre_command_hook")
+    If repeat
+        Loop, % arg ? arg : 1
+            send(str)
+    Else
+        send(str)
+    If change
+        run_hooks("after_change_hook")
+    If trans
+        run_hooks("after_display_transition_hook")
+    run_hooks("post_command_hook")
+}
+
+command_fun(fun, change, trans, repeat)
+{ Global
+    run_hooks("pre_command_hook")
+    If repeat
+        Loop, % arg ? arg : 1
+            %fun%()
+    Else
+        %fun%()
+    If change
+        run_hooks("after_change_hook")
+    If trans
+        run_hooks("after_display_transition_hook")
+    run_hooks("post_command_hook")
+}
+
+command_motion(str, repeat)
+{ Global
+    run_hooks("pre_command_hook")
+    If mark
+        send("{shift down}")
+    If repeat
+        Loop, % arg ? arg : 1
+            send(str)
+    Else
+        send(str)
+    If mark
+        send("{shift up}")
+}
+
+command_mark(str)
+{
+    run_hooks("pre_command_hook")
+    send(str)
+    set_mark()
+    run_hooks("post_command_hook")
+}
+
+command_abc(a, b, c, change, trans)
+{ Global
+    run_hooks("pre_command_hook")
+    send(a)
+    Loop, % arg ? arg : 1
+        send(b)
+    send(c)
+    If change
+        run_hooks("after_change_hook")
+    If trans
+        run_hooks("after_display_transition_hook")
+    run_hooks("post_command_hook")
+}
+
+command_pair(str)
+{ Global
+    run_hooks("pre_command_hook")
+    If mark
+        send("^x")
+    Loop, % arg ? arg : 1
+        send(str)
+    If mark
+        send("^v")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
+}
+
+;; ----------------
+;; alttab detection
+;; ----------------
+
+;; Usage:
+;;
+;; #If, alt_pressed
+;; alt up:: alttab_end()
+;; #If,
+;; !tab:: alttab_next()
+
+alt_pressed = 0
+
+alttab_next()
+{ Global
+    alt_pressed = 1
+    command_simple("{alt down}{tab}", 0, 1, 1)
+}
+
+alttab_end()
+{ Global
+    alt_pressed = 0
+    command_simple("{alt up}", 0, 0, 0)
+}
+
+;; -----------
+;; send itself
+;; -----------
 
 ;; send itself ARG times (for ASCII keys)
 self_insert_command()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send(A_ThisHotKey)
+    command_simple(A_ThisHotKey, 1, 0, 1)
 }
 
 ;; send itself ARG times (for non-ASCII keys)
 self_send_command()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
     tmp = {%A_ThisHotKey%}
-    Loop, %arg%
-        send(tmp)
+    command_simple(tmp, 0, 1, 1)
+}
+
+;; digit argument
+digit_argument()
+{
+    run_hooks("pre_command_hook")
+    StringTrimLeft, tmp, A_ThisHotKey, 1
+    set_digit_argument(tmp)
+    run_hooks("post_command_hook")
 }
 
 ;; ------
 ;; system
 ;; ------
 
-;; close window (M-F4)
-kill_emacs()
+;; do nothing
+ignore()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("!{f4}")
-    after_display_transition_hook()
+    run_hooks("pre_command_hook")
+    run_hooks("post_command_hook")
 }
 
-;; start recording macro
-kmacro_start_macro()
+set_mark_command()
 {
-    reset_cx()
-    get_argument()
-    set_macro()
+    command_fun("set_mark", 0, 0, 0)
 }
 
-;; end recording macro
-kmacro_end_macro()
-{
-    reset_cx()
-    get_argument()
-    reset_macro()
-}
-
-;; call last recorded macro ARG times
-kmacro_call_macro()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-    {
-        Loop, %kmacro_count%
-        {
-            tmp := kmacro%A_Index%
-            Send %tmp%
-        }
-    }
-}
-
-;; end macro and call it ARG times
-kmacro_end_and_call_macro()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    If kmacro_recording
-        kmacro_end_macro()
-    Loop, %arg%
-        kmacro_call_macro()
-}
-
-;; end macro or call macro ARG times
-kmacro_end_or_call_macro()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    If kmacro_recording
-        kmacro_end_macro()
-    Else Loop, %arg%
-        kmacro_call_macro()
-}
-
-;; repeat last command again ARG times
-repeat()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        Send %last_command%
+set_cx_command()
+{ Global
+    run_hooks("pre_command_hook")
+    arg_internal := arg
+    set_cx()
+    run_hooks("post_command_hook")
 }
 
 ;; send ESC and reset variables
 keyboard_quit()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
+    run_hooks("pre_command_hook")
     send("{escape}")
+    reset_mark()
+    run_hooks("post_command_hook")
 }
 
-;; help
-help()
+;; -------------
+;; recorded keys
+;; -------------
+
+;; repeat last command again ARG times
+repeat()
+{ Global
+    command_simple(last_command, 0, 0, 1)
+}
+
+;; start recording macro
+kmacro_start_macro()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("{f1}")
-    after_display_transition_hook()
+    command_fun("macro_start", 0, 0, 0)
+}
+
+;; end recording macro
+kmacro_end_macro()
+{
+    command_fun("macro_end", 0, 0, 0)
+}
+
+;; call macro
+kmacro_call_macro()
+{
+    command_fun("macro_call", 0, 0, 1)
+}
+
+;; end of call macro
+kmacro_end_or_call_macro()
+{ Global
+    If kmacro_recording
+        kmacro_end_macro()
+    Else
+        kmacro_call_macro()
+}
+
+;; end and call macro
+kmacro_end_and_call_macro()
+{ Global
+    run_hooks("pre_command_hook")
+    If kmacro_recording
+        macro_end()
+    Loop, % arg ? arg : 1
+        macro_call()
+    run_hooks("post_command_hook")
 }
 
 ;; -----
@@ -134,41 +233,25 @@ help()
 ;; save (C-s)
 save_buffer()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("^s")
-    after_display_transition_hook()
+    command_simple("^s", 0, 1, 0)
 }
 
 ;; files(_F) > save as(_A)
 write_file()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("{alt down}fa{alt up}")
-    after_display_transition_hook()
+    command_simple("{alt down}fa{alt up}", 0, 1, 0)
 }
 
 ;; open file (C-o)
 find_file()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("^o")
-    after_display_transition_hook()
+    command_simple("^o", 0, 1, 0)
 }
 
 ;; launch explorer (Win-e)
 dired()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("#e")
-    after_display_transition_hook()
+    command_simple("#e", 0, 1, 0)
 }
 
 ;; ---------------
@@ -178,141 +261,77 @@ dired()
 ;; close window (M-F4)
 kill_frame()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("!{F4}")
-    after_display_transition_hook()
+    command_simple("!{F4}", 0, 1, 0)
 }
 
 ;; delete ARG tabs (C-F4)
 delete_window()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("^{f4}")
-    after_display_transition_hook()
+    command_simple("^{f4}", 0, 1, 1)
 }
 
 ;; new ARG tabs (C-t)
 split_window()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("^t")
-    after_display_transition_hook()
+    command_simple("^t", 0, 1, 1)
 }
 
 ;; forward ARG tabs (C-TAB)
 next_window()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("^{tab}")
-    after_display_transition_hook()
+    command_simple("^{tab}", 0, 1, 1)
 }
 
 ;;  backward ARG tabs (C-S-TAB)
 previous_window()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("^+{tab}")
-    after_display_transition_hook()
+    command_simple("^+{tab}", 0, 1, 1)
 }
 
 ;; minimize frame (Win-Down)
 suspend_frame()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("#{down}")
-    after_display_transition_hook()
+    command_simple("#{down}", 0, 1, 0)
 }
 
 ;; --------
-;; movement
+;; motion
 ;; --------
 
 ;; forward ARG chars
 forward_char()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}{right}{shift up}")
-        Else
-            send("{right}")
+{
+    command_motion("{right}", 1)
 }
 
 ;; backward ARG chars
 backward_char()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}{left}{shift up}")
-        Else
-            send("{left}")
+{
+    command_motion("{left}", 1)
 }
 
 ;; forward ARG words (C-right)
 forward_word()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}^{right}{shift up}")
-        Else
-            send("^{right}")
+{
+    command_motion("^{right}", 1)
 }
 
 ;; backward ARG words (C-left)
 backward_word()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}^{left}{shift up}")
-        Else
-            send("^{left}")
+{
+    command_motion("^{left}", 1)
 }
 
 ;; down ARG lines
 next_line()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}{down}{shift up}")
-        Else
-            send("{down}")
+{
+    command_motion("{down}", 1)
 }
 
 ;; up ARG lines
 previous_line()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}{up}{shift up}")
-        Else
-            send("{up}")
+{
+    command_motion("{up}", 1)
 }
 
 ;; --------------
@@ -321,248 +340,145 @@ previous_line()
 
 ;; PgDn ARG times
 scroll_down()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}{pgdn}{shift up}")
-        Else
-            send("{pgdn}")
+{
+    command_motion("{pgdn}", 1)
 }
 
 ;; PgUp ARG times
 scroll_up()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}{pgup}{shift up}")
-        Else
-            send("{pgup}")
+{
+    command_motion("{pgup}", 1)
 }
 
 ;; scroll left ARG times (Alt+PgUp)
 scroll_left()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}!{pgup}{shift up}")
-        Else
-            send("!{pgup}")
+{
+    command_motion("!{pgup}", 1)
 }
 
 ;; scroll right ARG times (Alt+PgDn)
 scroll_right()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    Loop, %arg%
-        If mark
-            send("{shift down}!{pgdn}{shift up}")
-        Else
-            send("!{pgdn}")
+{
+    command_motion("!{pgdn}", 1)
 }
 
 ;; Home
 move_beginning_of_line()
-{ Global
-    reset_cx()
-    get_argument()
-    If mark
-        send("{shift down}{home}{shift up}")
-    Else
-        send("{home}")
+{
+    command_motion("{home}", 0)
 }
 
 ;; End
 move_end_of_line()
-{ Global
-    reset_cx()
-    get_argument()
-    If mark
-        send("{shift down}{end}{shift up}")
-    Else
-        send("{end}")
+{
+    command_motion("{end}", 0)
 }
 
 ;; bob (C-Home)
 beginning_of_buffer()
-{ Global
-    reset_cx()
-    get_argument()
-    If mark
-        send("{shift down}^{home}{shift up}")
-    Else
-        send("^{home}")
+{
+    command_motion("^{home}", 9)
 }
 
 ;; eob (C-End)
 end_of_buffer()
-{ Global
-    reset_cx()
-    get_argument()
-    If mark
-        send("{shift down}^{end}{shift up}")
-    Else
-        send("^{end}")
+{
+    command_motion("^{end}", 0)
 }
 
 ;; move to the bob and forward N-1 lines
 goto_line()
 {
-    reset_cx()
-    get_argument()
+    run_hooks("pre_command_hook")
     InputBox, line, Goto:, , , 130, 105
     If line is number
     {
-        reset_mark()
         line--
-        beginning_of_buffer()
+        reset_mark()
+        send("^{home}")
         Loop, %line%
-            next_line()
+            send("{down}")
     }
+    run_hooks("post_command_hook")
 }
 
 ;; ------
 ;; region
 ;; ------
 
-;; set mark
-set_mark_command()
-{
-    reset_cx()
-    get_argument()
-    set_mark()
-}
-
 ;; mark this word
 mark_word()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    forward_char()
-    backward_word()
-    forward_word()
-    set_mark()
-    backward_word()
+    command_mark("^{right}{shift down}^{left}{shift up}")
 }
 
 ;; mark this line
 mark_whole_line()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    move_beginning_of_line()
-    set_mark()
-    move_end_of_line()
+    command_mark("{home}{shift down}{end}{shift up}")
 }
 
 ;; mark this buffer
 mark_whole_buffer()
 {
-    reset_cx()
-    get_argument()
-    set_mark()
-    send("^a")
+    command_mark("^a")
 }
 
 ;; copy (C-c)
 kill_ring_save()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
+    run_hooks("pre_command_hook")
     send("^c")
+    reset_mark()
+    run_hooks("post_command_hook")
 }
 
 ;; cut (C-x)
 kill_region()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("^x")
+    command_simple("^x", 1, 0, 0)
 }
 
 ;; paste ARG times (C-v)
 yank()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("^v")
+    command_simple("^v", 1, 0, 1)
 }
-
-;; ----------------
-;; delete something
-;; ----------------
 
 ;; delete ARG chars forward (Del)
 delete_char()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("{del}")
+    command_simple("{del}", 1, 0, 1)
 }
 
 ;; delete ARG chars backward (Bs)
 delete_backward_char()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("{bs}")
+    command_simple("{bs}", 1, 0, 1)
 }
 
 ;; delete ARG words "forward"
 kill_word()
 {
-    reset_cx()
-    arg := get_argument()
-    set_mark()
-    Loop, %arg%
-        forward_word()
-    kill_region()
+    command_abc("{shift down}", "^{right}", "{shift up}^x", 1, 0)
 }
 
 ;; delete ARG words "backward"
 backward_kill_word()
 {
-    reset_cx()
-    arg := get_argument()
-    set_mark()
-    Loop, %arg%
-        backward_word()
-    kill_region()
+    command_abc("{shift down}", "^{left}", "{shift up}^x", 1, 0)
 }
 
 ;; delete this line "forward"
 kill_line()
 {
-    reset_cx()
-    get_argument()
-    set_mark()
-    move_end_of_line()
-    kill_region()
+    command_simple("{shift down}{end}{shift up}^x", 1, 0, 0)
 }
 
 ;; delete whole line
 kill_whole_line()
 {
-    reset_cx()
-    get_argument()
-    mark_whole_line()
-    kill_region()
+    command_simple("{home}{shift down}{end}{shift up}^x", 1, 0, 0)
 }
 
 ;; ------------------
@@ -572,44 +488,25 @@ kill_whole_line()
 ;; new ARG lines (Ret)
 newline()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("{enter}")
+    command_simple("{enter}", 1, 0, 1)
 }
 
 ;; open ARG lines below (Ret, Left)
 open_line()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("{enter}{left}")
+    command_simple("{enter}{left}", 1, 0, 1)
 }
 
 ;; indent ARG times (Tab)
 indent_for_tab_command()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("{tab}")
+    command_simple("{tab}", 1, 0, 1)
 }
 
 ;; join ARG lines backward
 delete_indentation()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-    {
-        move_beginning_of_line()
-        delete_backward_char()
-    }
+    command_simple("{home}{bs}", 1, 0, 1)
 }
 
 ;; -------------
@@ -619,93 +516,106 @@ delete_indentation()
 ;; undo ARG times (C-z)
 undo_only()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("^z")
+    command_simple("^z", 1, 0, 1)
 }
 
 ;; redo ARG times (C-y)
 redo()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
-        send("^y")
+    command_simple("^y", 1, 0, 1)
 }
 
 ;; transpose ARG chars
 transpose_chars()
 {
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    backward_char()
-    set_mark()
-    forward_char()
-    kill_region()
-    Loop, %arg%
-        forward_char()
-    yank()
+    command_abc("{left}{shift down}{right}{shift up}^x", "{right}", "^v", 1, 0)
 }
 
 ;; transpose ARG words
 transpose_words()
 {
-    reset_cx()
-    arg := get_argument()
-    reset_mark()
-    backward_char()
-    mark_word()
-    kill_region()
-    Loop, %arg%
-        forward_word()
-    yank()
+    command_abc("{left}^{right}{shift down}^{left}{shift up}^x", "^{right}", "^v", 1, 0)
 }
 
 ;; transpose ARG lines
 transpose_lines()
 {
-    reset_cx()
-    arg := get_argument()
-    reset_mark()
-    previous_line()
-    move_beginning_of_line()
-    set_mark()
-    next_line()
-    kill_region()
-    Loop, %arg%
-        next_line()
-    yank()
+    command_abc("{up}{home}{shift down}{down}{shift up}^x", "{down}", "^v", 1, 0)
 }
 
 ;; replace (C-h)
 query_replace()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("^h")
+    command_simple("^h", 0, 1, 0)
 }
 
 ;; search (C-f)
 search_forward()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("^f")
+    command_simple("^f", 0, 1, 0)
 }
 
 ;; insert mode (ins)
 overwrite_mode()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("{insert}")
+    command_simple("{insert}", 0, 0, 0)
+}
+
+;; ---------------
+;; case conversion
+;; ---------------
+
+upcase_region()
+{
+    run_hooks("pre_command_hook")
+    safe_cut()
+    StringUpper, Clipboard, Clipboard
+    send("^v")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
+}
+
+downcase_region()
+{
+    run_hooks("pre_command_hook")
+    safe_cut()
+    StringLower, Clipboard, Clipboard
+    send("^v")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
+}
+
+upcase_word()
+{
+    run_hooks("pre_command_hook")
+    send("^{right}{shift down}^{left}{shift up}")
+    safe_cut()
+    StringUpper, Clipboard, Clipboard
+    send("^v")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
+}
+
+downcase_word()
+{
+    run_hooks("pre_command_hook")
+    send("^{right}{shift down}^{left}{shift up}")
+    safe_cut()
+    StringLower, Clipboard, Clipboard
+    send("^v")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
+}
+
+capitalize_word()
+{
+    run_hooks("pre_command_hook")
+    send("{shift down}^{right}{shift up}")
+    safe_cut()
+    StringUpper, Clipboard, Clipboard, T
+    send("^v")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
 }
 
 ;; ---------------
@@ -714,42 +624,20 @@ overwrite_mode()
 
 ;; insert ARG parentheses
 insert_parentheses()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    If mark
-    {
-        kill_region()
-        Loop, %arg%
-            send("(){left}")
-        yank()
-    }Else
-        Loop, %arg%
-            send("(){left}")
+{
+    command_pair("(){left}")
 }
 
 ;; insert comment (/* `!!' */)
 insert_comment()
-{ Global
-    reset_cx()
-    get_argument()
-    If mark
-    {
-        kill_region()
-        send("/*  */{left}{left}{left}")
-        yank()
-    }Else
-        send("/*  */{left}{left}{left}")
+{
+    command_pair("/*  */{left}{left}{left}")
 }
 
-;; continue multiline comment ARG lines (\n/* `!!')
+;; continue multiline comment ARG lines (\n * `!!')
 indent_new_comment_line()
 {
-    reset_cx()
-    arg := get_argument()
-    reset_mark()
-    Loop, %arg%
-        send("{enter}  /*{space}")
+    command_simple("{enter} *{space}", 1, 0, 1)
 }
 
 ;; ------
@@ -759,29 +647,26 @@ indent_new_comment_line()
 ;; launch cmd.exe
 shell()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
+    run_hooks("pre_command_hook")
     Run, cmd.exe
-    after_display_transition_hook()
+    run_hooks("after_display_transition_hook")
+    run_hooks("post_command_hook")
 }
 
 ;; execute shell command (Win-r)
 shell_command()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("#r")
-    after_display_transition_hook()
+    command_simple("#r", 0, 1, 0)
 }
 
 ;; add text properties (basically for MSWord)
 facemenu()
 {
-    reset_cx()
-    reset_mark()
-    get_argument()
-    send("^d")
-    after_display_transition_hook()
+    command_simple("^d", 0, 1, 0)
+}
+
+;; help
+help()
+{
+    command_simple("{f1}", 0, 1, 0)
 }

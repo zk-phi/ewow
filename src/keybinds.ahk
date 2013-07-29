@@ -3,6 +3,15 @@
 
 ;; condition "!dummy" is added to prevent error "duplicate hotkeys"
 
+;; ----------------
+;; AltTab detection
+;; ----------------
+
+#If, alt_pressed
+alt up:: alttab_end()
+#If,
+!tab:: alttab_next()
+
 ;; ---------------
 ;; C-x C- bindings
 ;; ---------------
@@ -27,7 +36,7 @@
 ^r:: find_file()                ; find-file-read-only
 ^t:: transpose_lines()          ; transpose-lines
 ^y:: ignore()
-^u:: ignore()
+^u:: upcase_region()
 ^i:: ignore()
 ^o:: ignore()
 ^p:: ignore()
@@ -41,13 +50,13 @@
 ^h:: ignore()
 ^j:: ignore()
 ^k:: ignore()
-^l:: ignore()
+^l:: downcase_region()
 ^`;:: ignore()
 ^':: ignore()
 ^\:: ignore()
 ^z:: suspend_frame()            ; suspend-frame
 ^x:: ignore()
-^c:: kill_emacs()               ; save-buffers-kill-emacs
+^c:: kill_frame()               ; save-buffers-kill-emacs
 ^v:: find_file()                ; find-alternate-file
 ^b:: ignore()
 ^n:: ignore()
@@ -64,53 +73,53 @@
 ;; -------------------
 #If !dummy && !ignored_frame() && cx
 
-+`:: self_insert_command()
-+1:: self_insert_command()
-+2:: self_insert_command()
-+3:: self_insert_command()
-+4:: self_insert_command()
-+5:: self_insert_command()
-+6:: self_insert_command()
-+7:: self_insert_command()
-+8:: self_insert_command()
++`:: ignore()
++1:: ignore()
++2:: ignore()
++3:: ignore()
++4:: ignore()
++5:: ignore()
++6:: ignore()
++7:: ignore()
++8:: ignore()
 +9:: kmacro_start_macro()
 +0:: kmacro_end_macro()
-+-:: self_insert_command()
-+=:: self_insert_command()
-+q:: self_insert_command()
-+w:: self_insert_command()
-+e:: self_insert_command()
-+r:: self_insert_command()
-+t:: self_insert_command()
-+y:: self_insert_command()
-+u:: self_insert_command()
-+i:: self_insert_command()
-+o:: self_insert_command()
-+p:: self_insert_command()
-+[:: self_insert_command()
-+]:: self_insert_command()
-+a:: self_insert_command()
-+s:: self_insert_command()
-+d:: self_insert_command()
-+f:: self_insert_command()
-+g:: self_insert_command()
-+h:: self_insert_command()
-+j:: self_insert_command()
-+k:: self_insert_command()
-+l:: self_insert_command()
-+`;:: self_insert_command()
-+':: self_insert_command()
-+\:: self_insert_command()
-+z:: self_insert_command()
-+x:: self_insert_command()
-+c:: self_insert_command()
-+v:: self_insert_command()
-+b:: self_insert_command()
-+n:: self_insert_command()
-+m:: self_insert_command()
++-:: ignore()
++=:: ignore()
++q:: ignore()
++w:: ignore()
++e:: ignore()
++r:: ignore()
++t:: ignore()
++y:: ignore()
++u:: ignore()
++i:: ignore()
++o:: ignore()
++p:: ignore()
++[:: ignore()
++]:: ignore()
++a:: ignore()
++s:: ignore()
++d:: ignore()
++f:: ignore()
++g:: ignore()
++h:: ignore()
++j:: ignore()
++k:: ignore()
++l:: ignore()
++`;:: ignore()
++':: ignore()
++\:: ignore()
++z:: ignore()
++x:: ignore()
++c:: ignore()
++v:: ignore()
++b:: ignore()
++n:: ignore()
++m:: ignore()
 +,:: scroll_left()
 +.:: scroll_right()
-+/:: self_insert_command()
++/:: ignore()
 
 ;; ------------
 ;; C-x bindings
@@ -118,9 +127,9 @@
 #If !dummy && !ignored_frame() && cx
 
 `:: ignore()
-1:: ignore()                   ; * delete-other-windows
-2:: split_window()             ; split-window-vertically
-3:: split_window()             ; split-window-horizontally
+1:: ignore()                    ; * delete-other-windows
+2:: split_window()              ; split-window-vertically
+3:: split_window()              ; split-window-horizontally
 4:: ignore()
 5:: ignore()
 6:: ignore()
@@ -165,8 +174,8 @@ m:: ignore()
 .:: ignore()
 /:: ignore()
 
-left:: previous_window()       ; previous-buffer
-right:: next_window()          ; next-buffer
+left:: previous_window()        ; previous-buffer
+right:: next_window()           ; next-buffer
 
 ;; -------------------
 ;; C-M-Shift- bindings
@@ -227,16 +236,16 @@ right:: next_window()          ; next-buffer
 #If !dummy && !ignored_frame() && !cx
 
 !^`:: self_insert_command()
-!^1:: self_insert_command()
-!^2:: self_insert_command()
-!^3:: self_insert_command()
-!^4:: self_insert_command()
-!^5:: self_insert_command()
-!^6:: self_insert_command()
-!^7:: self_insert_command()
-!^8:: self_insert_command()
-!^9:: self_insert_command()
-!^0:: self_insert_command()
+!^1:: digit_argument()
+!^2:: digit_argument()
+!^3:: digit_argument()
+!^4:: digit_argument()
+!^5:: digit_argument()
+!^6:: digit_argument()
+!^7:: digit_argument()
+!^8:: digit_argument()
+!^9:: digit_argument()
+!^0:: digit_argument()
 !^-:: self_insert_command()
 !^=:: self_insert_command()
 !^q:: self_insert_command()
@@ -333,16 +342,16 @@ right:: next_window()          ; next-buffer
 #If !dummy && !ignored_frame() && !cx
 
 !`:: self_insert_command()
-!1:: self_insert_command()
-!2:: self_insert_command()
-!3:: self_insert_command()
-!4:: self_insert_command()
-!5:: self_insert_command()
-!6:: self_insert_command()
-!7:: self_insert_command()
-!8:: self_insert_command()
-!9:: self_insert_command()
-!0:: self_insert_command()
+!1:: digit_argument()
+!2:: digit_argument()
+!3:: digit_argument()
+!4:: digit_argument()
+!5:: digit_argument()
+!6:: digit_argument()
+!7:: digit_argument()
+!8:: digit_argument()
+!9:: digit_argument()
+!0:: digit_argument()
 !-:: self_insert_command()
 !=:: self_insert_command()
 !q:: self_insert_command()
@@ -351,7 +360,7 @@ right:: next_window()          ; next-buffer
 !r:: self_insert_command()
 !t:: transpose_words()
 !y:: yank()                     ; yank-pop
-!u:: self_insert_command()
+!u:: upcase_word()
 !i:: indent_for_tab_command()   ; tab-to-tab-stop
 !o:: facemenu()                 ; (prefix)
 !p:: self_insert_command()
@@ -365,13 +374,13 @@ right:: next_window()          ; next-buffer
 !h:: self_insert_command()
 !j:: indent_new_comment_line()
 !k:: self_insert_command()
-!l:: self_insert_command()
+!l:: downcase_word()
 !`;:: insert_comment()          ; comment-dwim
 !':: self_insert_command()
 !\:: self_insert_command()
 !z:: delete_char()              ; zap-to-char
 !x:: self_insert_command()
-!c:: self_insert_command()
+!c:: capitalize_word()
 !v:: scroll_down()
 !b:: backward_word()
 !n:: self_insert_command()
@@ -383,7 +392,7 @@ right:: next_window()          ; next-buffer
 !bs:: backward_kill_word()
 !left:: backward_word()
 !right:: forward_word()
-!f4:: kill_emacs()              ; save-buffers-kill-emacs
+!f4:: kill_frame()              ; save-buffers-kill-emacs
 
 ;; -----------------
 ;; C-Shift- bindings
@@ -483,7 +492,7 @@ right:: next_window()          ; next-buffer
 ^':: self_insert_command()
 ^\:: self_insert_command()
 ^z:: suspend_frame()
-^x:: set_cx()
+^x:: set_cx_command()
 ^c:: self_insert_command()
 ^v:: scroll_up()
 ^b:: backward_char()
@@ -496,8 +505,8 @@ right:: next_window()          ; next-buffer
 ^space:: set_mark_command()
 ^bs:: backward_kill_word()
 ^delete:: kill_word()
-^up:: scroll_up()                 ; backward-paragraph
-^down:: scroll_down()             ; forward-paragraph
+^up:: scroll_up()               ; backward-paragraph
+^down:: scroll_down()           ; forward-paragraph
 ^left:: backward_word()
 ^right:: forward_word()
 ^end:: end_of_buffer()

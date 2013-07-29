@@ -2,76 +2,30 @@
 
 ;; insert ARG colons followed by a space
 smart_colon()
-{
-    reset_cx()
-    reset_mark()
-    arg := get_argument()
-    Loop, %arg%
+{ Global
+    run_hooks("pre_command_hook")
+    Loop, % arg ? arg : 1
         send(",")
     send("{space}")
-}
-
-;; wrap or insert ARG parens
-smart_paren()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    If mark
-    {
-        kill_region()
-        Loop, %arg%
-            send("(){left}")
-        yank()
-    }Else
-        Loop, %arg%
-            send("(){left}")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
 }
 
 ;; wrap or insert brackets
 smart_bracket()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    If mark
-    {
-        kill_region()
-        Loop, %arg%
-            send("[]{left}")
-        yank()
-    }Else
-        Loop, %arg%
-            send("[]{Left}")
+{
+    command_pair("[]{left}")
 }
 
-;; wrap or insert braces
+;; wrap or insert bracesr
 smart_brace()
-{ local arg
-    reset_cx()
-    arg := get_argument()
-    If mark
-    {
-        kill_region()
-        Loop, %arg%
-            send("{shift down}[]{shift up}{left}")
-        yank()
-    }Else
-        Loop, %arg%
-            send("{shift down}[]{shift up}{Left}")
+{
+    command_pair("{shift down}[]{shift up}{left}")
 }
 
 ;; wrap or insert double quotes
 smart_dquot()
-{ local arg, tmp
-    reset_cx()
-    arg := get_argument()
-    tmp = ""{left}              ; can this be more smart ?
-    If mark
-    {
-        kill_region()
-        Loop, %arg%
-            send(tmp)
-        yank()
-    }Else
-        Loop, %arg%
-            send(tmp)
+{
+    tmp = ""{left}
+    command_pair(tmp)
 }

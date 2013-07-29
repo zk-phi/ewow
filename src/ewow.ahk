@@ -1,5 +1,29 @@
 ;; This script provides: fundamental functions, environment
 
+;; -------------------------
+;; what this script provides
+;; -------------------------
+
+;; + send()       ... a wrapper function of "Send"
+;; + macro_start(), macro_end(), macro_call()
+
+;; + ignored_frame() ... decide if EWOW should be disbaled
+;; => configure with "ignored_frames" variable
+
+;; + last_command ... keys sent last
+;; + arg          ... digit argument (> 0)
+;; => automatically updated
+
+;; + cx           ... true if C-x is prefixed
+;; + mark         ... true if mark is active
+;; => use setter functions
+
+;; pre_command_hook
+;; post_command_hook
+;; after_change_hook
+;; after_display_transition_hook
+;; => use "add_hook" and "run_hooks"
+
 ;; ------------------
 ;; AHK configurations
 ;; ------------------
@@ -18,138 +42,143 @@ Sendmode Input
 ;; utility functions
 ;; -----------------
 
+ignored_frames =
+
 ignored_frame()
 { Global
-    WinGetClass, test, A
-    If test in %ignored_frames%
+    WinGetClass, class, A
+    If class in %ignored_frames%
         Return 1
     Else
         Return 0
 }
 
-;; all send commands must be done via this function,
-;; so that kmacro can record it
+;; -----
+;; hooks
+;; -----
+
+pre_command_hook =
+post_command_hook =
+after_change_hook =
+after_display_transition_hook =
+
+run_hooks(list)
+{ Global
+    Loop, Parse, %list%, `,, `r `n
+    {
+        If isFunc(A_LoopField)
+            %A_LoopField%()
+    }
+}
+
+add_hook(list, fun)
+{ Local varname
+    varname := %list%
+    %list% = %varname%,%fun%
+}
+
+;; ----------------
+;; send/record keys
+;; ----------------
+
+last_command =
+macro_recording = 0
+macro_count = 0
+
+;; a wrapper function of "Send"
 send(key)
-{
+{ Global
     Send, %key%
-    command_history_update(key)
+    last_command := key
+    If macro_recording{
+        macro_count++
+        macro%macro_count% := key
+        ToolTip, %key%, , , 3
+    }
 }
 
-;; ----------------
-;; alttab detection
-;; ----------------
-
-alt_pressed = 0
-
-#If, alt_pressed
-alt up:: alttab_end()
-#If,
-!tab:: alttab_next()
-
-alttab_next()
+macro_start()
 { Global
-    reset_cx()
-    alt_pressed = 1
-    send("{alt down}{tab}")
-    reset_mark()
-    after_display_transition_hook()
+    macro_recording = 1
+    macro_count = 0
+    ToolTip, REC, , , 3
 }
 
-alttab_end()
+macro_end()
 { Global
-    alt_pressed = 0
-    send("{alt up}")
+    macro_recording = 0
+    ToolTip, , , , 3
 }
 
-;; ---
-;; C-x
-;; ---
+macro_call()
+{ Global
+    Local varname
+    Loop, %macro_count%{
+        varname := macro%A_Index%
+        Send, %varname%
+    }
+}
+
+;; -------------
+;; set/reset C-x
+;; -------------
 
 cx = 0
 
 set_cx()
 { Global
-    cx = 1
+    cx := 1
     ToolTip, C-x -, 1, 0, 1
 }
 
 reset_cx()
 { Global
-    cx = 0
+    cx := 0
     ToolTip, , , , 1
 }
 
-;; ----
-;; mark
-;; ----
+add_hook("pre_command_hook", "reset_cx")
+
+;; --------------
+;; set/reset mark
+;; --------------
 
 mark = 0
 
 set_mark()
 { Global
-    mark = 1
+    mark := 1
     ToolTip, mark, 45, 0, 2
 }
 
 reset_mark()
 { Global
-    mark = 0
+    mark := 0
     ToolTip, , , , 2
 }
 
-;; --------------------------------
-;; keyboard macro / command history
-;; --------------------------------
-
-;; should ewow record mouse clicks too ?
-
-kmacro_recording = 0
-kmacro_count = 0
-kmacro =
-last_command =
-
-command_history_update(key)
-{ Global
-    last_command := key
-    If kmacro_recording
-    {
-        ToolTip, %key%, , , 3
-        kmacro_count++
-        kmacro%kmacro_count% := key
-    }
-}
-
-set_macro()
-{ Global
-    kmacro_recording = 1
-    kmacro_count = 0
-    ToolTip, REC, , , 3
-}
-
-reset_macro()
-{ Global
-    kmacro_recording = 0
-    ToolTip, , , , 3
-}
+add_hook("after_change_hook", "reset_mark")
+add_hook("after_display_transition_hook", "reset_mark")
 
 ;; --------------
 ;; digit argument
 ;; --------------
 
-digit_argument = 0
+arg = 0
+arg_internal = 0
 
-digit_argument()
-{ local tmp
-    StringTrimLeft, tmp, A_ThisHotKey, 1
-    digit_argument *= 10
-    digit_argument += %tmp%
-    ToolTip, %digit_argument%, 1, 0, 1
+set_digit_argument(n)
+{ Global
+    arg_internal := arg * 10 + n
+    ToolTip, %arg_internal%, 1, 0, 1
 }
 
+;; retrive arg from arg_internal
 get_argument()
-{ local tmp
-    tmp = % digit_argument ? digit_argument : 1
-    digit_argument = 0
-    ToolTip, , 1, 0, 1
-    Return tmp
+{ Global
+    arg := arg_internal
+    arg_internal = 0
+    ToolTip, , , , 1
 }
+
+add_hook("pre_command_hook", "get_argument")

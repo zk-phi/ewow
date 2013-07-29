@@ -22,10 +22,11 @@ tasktray icon. Keybinds are basically the same as Emacs.
 ** Known Limitations
 
 + mouse clicks are not recorded in macro
-+ command "goto-line" is not compatible with macro
++ command "goto-line", "upcase-xxx", "downcase-xxx" are not compatible
+  with macro
 
 ** Customization
 
-Put all source files in the same directory, and modify
+Put all source files in the same directory, and edit
 "default_setting.ahk". Then compile it.
 
