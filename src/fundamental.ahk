@@ -1,672 +1,234 @@
-;; This script provides: emacs-like simple commands
+;; This script provides: fundamental functions, environment
 
-;; ---------
-;; utilities
-;; ---------
+;; -------------------------
+;; what this script provides
+;; -------------------------
 
-safe_cut()
-{
-    ClipBoard =
-    send("^x")
-    ClipWait, 0.5
-}
+;; + send()       ... a wrapper function of "Send"
+;; => ALWAYS USE THIS FUNCTION
 
-;; ---------------
-;; command schemes
-;; ---------------
+;; + read_char() ... steals one event and returns it
 
-command_simple(str, change, trnas, repeat)
+;; + ignored_frame() ... decide if EWOW should be disbaled
+;; => configure with "ignored_frames" variable
+
+;; + last_command ... keys sent last
+;; + arg          ... digit argument (> 0)
+;; => automatically updated
+
+;; + cx           ... true if C-x is prefixed
+;; + mark         ... true if mark is active
+;; => use setter functions
+
+;; + alloc_tt() ... allocate a tooltip id
+
+;; pre_command_hook
+;; post_command_hook
+;; after_change_hook
+;; => use "add_hook" and "run_hooks"
+
+;; after_send_hook
+;; after_display_transition_hook
+;; => use "add_hook". runned automatically
+
+;; ------------------
+;; AHK configurations
+;; ------------------
+
+#SingleInstance
+#NoEnv
+#InstallKeybdHook
+#UseHook
+#MaxHotkeysPerInterval 100
+
+SetBatchLines, -1
+SetKeyDelay, 0
+Sendmode Input
+
+;; --------------------
+;; check ignored frames
+;; --------------------
+
+ignored_frames = ConsoleWindowClass,cygwin/x X rl-xterm-XTerm-0,mintty,MEADOW,Vim,Emacs,XEmacs,SunAwtFrame,Xming X,VMPlayerFrame
+
+;; decide if ewow should be quiet
+ignored_frame()
 { Global
-    run_hooks("pre_command_hook")
-    If repeat
-        Loop, % arg ? arg : 1
-            send(str)
+    Local class
+    WinGetClass, class, A
+    If class in %ignored_frames%
+        Return 1
     Else
-        send(str)
-    If change
-        run_hooks("after_change_hook")
-    If trans
-        run_hooks("after_display_transition_hook")
-    run_hooks("post_command_hook")
-}
-
-command_fun(fun, change, trans, repeat)
-{ Global
-    run_hooks("pre_command_hook")
-    If repeat
-        Loop, % arg ? arg : 1
-            %fun%()
-    Else
-        %fun%()
-    If change
-        run_hooks("after_change_hook")
-    If trans
-        run_hooks("after_display_transition_hook")
-    run_hooks("post_command_hook")
-}
-
-command_motion(str, repeat)
-{ Global
-    run_hooks("pre_command_hook")
-    If mark
-        send("{shift down}")
-    If repeat
-        Loop, % arg ? arg : 1
-            send(str)
-    Else
-        send(str)
-    If mark
-        send("{shift up}")
-}
-
-command_mark(str)
-{
-    run_hooks("pre_command_hook")
-    send(str)
-    set_mark()
-    run_hooks("post_command_hook")
-}
-
-command_abc(a, b, c, change, trans)
-{ Global
-    run_hooks("pre_command_hook")
-    send(a)
-    Loop, % arg ? arg : 1
-        send(b)
-    send(c)
-    If change
-        run_hooks("after_change_hook")
-    If trans
-        run_hooks("after_display_transition_hook")
-    run_hooks("post_command_hook")
-}
-
-command_pair(str)
-{ Global
-    run_hooks("pre_command_hook")
-    If mark
-        send("^x")
-    Loop, % arg ? arg : 1
-        send(str)
-    If mark
-        send("^v")
-    run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-;; ----------------
-;; alttab detection
-;; ----------------
-
-;; Usage:
-;;
-;; #If, alt_pressed
-;; alt up:: alttab_end()
-;; #If,
-;; !tab:: alttab_next()
-
-alt_pressed = 0
-
-alttab_next()
-{ Global
-    alt_pressed = 1
-    command_simple("{alt down}{tab}", 0, 1, 1)
-}
-
-alttab_end()
-{ Global
-    alt_pressed = 0
-    command_simple("{alt up}", 0, 0, 0)
-}
-
-;; -----------
-;; send itself
-;; -----------
-
-;; send itself ARG times (for ASCII keys)
-self_insert_command()
-{
-    command_simple(A_ThisHotKey, 1, 0, 1)
-}
-
-;; send itself ARG times (for non-ASCII keys)
-self_send_command()
-{
-    tmp = {%A_ThisHotKey%}
-    command_simple(tmp, 0, 1, 1)
-}
-
-;; digit argument
-digit_argument()
-{
-    run_hooks("pre_command_hook")
-    StringTrimLeft, tmp, A_ThisHotKey, 1
-    set_digit_argument(tmp)
-    run_hooks("post_command_hook")
-}
-
-;; ------
-;; system
-;; ------
-
-;; do nothing
-ignore()
-{
-    run_hooks("pre_command_hook")
-    run_hooks("post_command_hook")
-}
-
-set_mark_command()
-{
-    command_fun("set_mark", 0, 0, 0)
-}
-
-set_cx_command()
-{ Global
-    run_hooks("pre_command_hook")
-    arg_internal := arg
-    set_cx()
-    run_hooks("post_command_hook")
-}
-
-;; send ESC and reset variables
-keyboard_quit()
-{
-    run_hooks("pre_command_hook")
-    send("{escape}")
-    reset_mark()
-    run_hooks("post_command_hook")
-}
-
-;; -------------
-;; recorded keys
-;; -------------
-
-;; repeat last command again ARG times
-repeat()
-{ Global
-    command_simple(last_command, 0, 0, 1)
-}
-
-;; start recording macro
-kmacro_start_macro()
-{
-    command_fun("macro_start", 0, 0, 0)
-}
-
-;; end recording macro
-kmacro_end_macro()
-{
-    command_fun("macro_end", 0, 0, 0)
-}
-
-;; call macro
-kmacro_call_macro()
-{
-    command_fun("macro_call", 0, 0, 1)
-}
-
-;; end of call macro
-kmacro_end_or_call_macro()
-{ Global
-    If kmacro_recording
-        kmacro_end_macro()
-    Else
-        kmacro_call_macro()
-}
-
-;; end and call macro
-kmacro_end_and_call_macro()
-{ Global
-    run_hooks("pre_command_hook")
-    If kmacro_recording
-        macro_end()
-    Loop, % arg ? arg : 1
-        macro_call()
-    run_hooks("post_command_hook")
+        Return 0
 }
 
 ;; -----
-;; files
+;; hooks
 ;; -----
 
-;; save (C-s)
-save_buffer()
-{
-    command_simple("^s", 0, 1, 0)
-}
+pre_command_hook =
+post_command_hook =
+after_change_hook =
+;; => call manually
 
-;; files(_F) > save as(_A)
-write_file()
-{
-    command_simple("{alt down}fa{alt up}", 0, 1, 0)
-}
+after_send_hook =
+;; => called by send()
 
-;; open file (C-o)
-find_file()
-{
-    command_simple("^o", 0, 1, 0)
-}
+after_display_transition_hook =
+;; => called on WinEventHook
 
-;; launch explorer (Win-e)
-dired()
-{
-    command_simple("#e", 0, 1, 0)
-}
-
-;; ---------------
-;; windows, frames
-;; ---------------
-
-;; close window (M-F4)
-kill_frame()
-{
-    command_simple("!{F4}", 0, 1, 0)
-}
-
-;; delete ARG tabs (C-F4)
-delete_window()
-{
-    command_simple("^{f4}", 0, 1, 1)
-}
-
-;; new ARG tabs (C-t)
-split_window()
-{
-    command_simple("^t", 0, 1, 1)
-}
-
-;; forward ARG tabs (C-TAB)
-next_window()
-{
-    command_simple("^{tab}", 0, 1, 1)
-}
-
-;;  backward ARG tabs (C-S-TAB)
-previous_window()
-{
-    command_simple("^+{tab}", 0, 1, 1)
-}
-
-;; minimize frame (Win-Down)
-suspend_frame()
-{
-    command_simple("#{down}", 0, 1, 0)
-}
-
-;; --------
-;; motion
-;; --------
-
-;; forward ARG chars
-forward_char()
-{
-    command_motion("{right}", 1)
-}
-
-;; backward ARG chars
-backward_char()
-{
-    command_motion("{left}", 1)
-}
-
-;; forward ARG words (C-right)
-forward_word()
-{
-    command_motion("^{right}", 1)
-}
-
-;; backward ARG words (C-left)
-backward_word()
-{
-    command_motion("^{left}", 1)
-}
-
-;; down ARG lines
-next_line()
-{
-    command_motion("{down}", 1)
-}
-
-;; up ARG lines
-previous_line()
-{
-    command_motion("{up}", 1)
-}
-
-;; --------------
-;; jumping around
-;; --------------
-
-;; PgDn ARG times
-scroll_down()
-{
-    command_motion("{pgdn}", 1)
-}
-
-;; PgUp ARG times
-scroll_up()
-{
-    command_motion("{pgup}", 1)
-}
-
-;; scroll left ARG times (Alt+PgUp)
-scroll_left()
-{
-    command_motion("!{pgup}", 1)
-}
-
-;; scroll right ARG times (Alt+PgDn)
-scroll_right()
-{
-    command_motion("!{pgdn}", 1)
-}
-
-;; Home
-move_beginning_of_line()
-{
-    command_motion("{home}", 0)
-}
-
-;; End
-move_end_of_line()
-{
-    command_motion("{end}", 0)
-}
-
-;; bob (C-Home)
-beginning_of_buffer()
-{
-    command_motion("^{home}", 9)
-}
-
-;; eob (C-End)
-end_of_buffer()
-{
-    command_motion("^{end}", 0)
-}
-
-;; move to the bob and forward N-1 lines
-goto_line()
-{
-    run_hooks("pre_command_hook")
-    InputBox, line, Goto:, , , 130, 105
-    If line is number
+run_hooks(name)
+{ Global
+    Loop, Parse, %name%, `,, `r `n
     {
-        line--
-        reset_mark()
-        send("^{home}")
-        Loop, %line%
-            send("{down}")
+        If isFunc(A_LoopField)
+            %A_LoopField%()
     }
-    run_hooks("post_command_hook")
 }
 
-;; ------
-;; region
-;; ------
-
-;; mark this word
-mark_word()
-{
-    command_mark("^{right}{shift down}^{left}{shift up}")
+remove_hook(name, fun)
+{ Global
+    Local list, regex
+    list := %name%
+    regex = ,?%fun%
+    %name% := RegExReplace(list, regex, "")
 }
 
-;; mark this line
-mark_whole_line()
-{
-    command_mark("{home}{shift down}{end}{shift up}")
+add_hook(name, fun)
+{ Global
+    Local list
+    list := %name%
+    If fun in %list%
+        Return
+    If list !=
+        %name% = %list%,%fun%
+    Else
+        %name% = %fun%
 }
 
-;; mark this buffer
-mark_whole_buffer()
-{
-    command_mark("^a")
+;; ---------
+;; send keys
+;; ---------
+
+read_char_waiting = 0
+last_command =
+
+;; a wrapper function of "Send"
+send(key)
+{ Global
+    last_command := key
+    If !read_char_waiting
+        Send, %key%
+    Else
+        read_char_waiting = 0
+    run_hooks("after_send_hook")
 }
 
-;; copy (C-c)
-kill_ring_save()
-{
-    run_hooks("pre_command_hook")
-    send("^c")
-    reset_mark()
-    run_hooks("post_command_hook")
+read_char()
+{ Global
+    read_char_waiting = 1
+    While read_char_waiting
+    {}
+    Return last_command
 }
 
-;; cut (C-x)
-kill_region()
+;; -------------------------
+;; detect display transition
+;; -------------------------
+
+;; taken from
+;; https://sites.google.com/site/agkh6mze/howto/winevent
+
+dt_callback(a, b, c, d, e, f, g)
 {
-    command_simple("^x", 1, 0, 0)
-}
-
-;; paste ARG times (C-v)
-yank()
-{
-    command_simple("^v", 1, 0, 1)
-}
-
-;; delete ARG chars forward (Del)
-delete_char()
-{
-    command_simple("{del}", 1, 0, 1)
-}
-
-;; delete ARG chars backward (Bs)
-delete_backward_char()
-{
-    command_simple("{bs}", 1, 0, 1)
-}
-
-;; delete ARG words "forward"
-kill_word()
-{
-    command_abc("{shift down}", "^{right}", "{shift up}^x", 1, 0)
-}
-
-;; delete ARG words "backward"
-backward_kill_word()
-{
-    command_abc("{shift down}", "^{left}", "{shift up}^x", 1, 0)
-}
-
-;; delete this line "forward"
-kill_line()
-{
-    command_simple("{shift down}{end}{shift up}^x", 1, 0, 0)
-}
-
-;; delete whole line
-kill_whole_line()
-{
-    command_simple("{home}{shift down}{end}{shift up}^x", 1, 0, 0)
-}
-
-;; ------------------
-;; newline and indent
-;; ------------------
-
-;; new ARG lines (Ret)
-newline()
-{
-    command_simple("{enter}", 1, 0, 1)
-}
-
-;; open ARG lines below (Ret, Left)
-open_line()
-{
-    command_simple("{enter}{left}", 1, 0, 1)
-}
-
-;; indent ARG times (Tab)
-indent_for_tab_command()
-{
-    command_simple("{tab}", 1, 0, 1)
-}
-
-;; join ARG lines backward
-delete_indentation()
-{
-    command_simple("{home}{bs}", 1, 0, 1)
-}
-
-;; -------------
-;; edit commands
-;; -------------
-
-;; undo ARG times (C-z)
-undo_only()
-{
-    command_simple("^z", 1, 0, 1)
-}
-
-;; redo ARG times (C-y)
-redo()
-{
-    command_simple("^y", 1, 0, 1)
-}
-
-;; transpose ARG chars
-transpose_chars()
-{
-    command_abc("{left}{shift down}{right}{shift up}^x", "{right}", "^v", 1, 0)
-}
-
-;; transpose ARG words
-transpose_words()
-{
-    command_abc("{left}^{right}{shift down}^{left}{shift up}^x", "^{right}", "^v", 1, 0)
-}
-
-;; transpose ARG lines
-transpose_lines()
-{
-    command_abc("{up}{home}{shift down}{down}{shift up}^x", "{down}", "^v", 1, 0)
-}
-
-;; replace (C-h)
-query_replace()
-{
-    command_simple("^h", 0, 1, 0)
-}
-
-;; search (C-f)
-search_forward()
-{
-    command_simple("^f", 0, 1, 0)
-}
-
-;; insert mode (ins)
-overwrite_mode()
-{
-    command_simple("{insert}", 0, 0, 0)
-}
-
-;; ---------------
-;; case conversion
-;; ---------------
-
-upcase_region()
-{
-    run_hooks("pre_command_hook")
-    safe_cut()
-    StringUpper, Clipboard, Clipboard
-    send("^v")
-    run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-downcase_region()
-{
-    run_hooks("pre_command_hook")
-    safe_cut()
-    StringLower, Clipboard, Clipboard
-    send("^v")
-    run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-upcase_word()
-{
-    run_hooks("pre_command_hook")
-    send("^{right}{shift down}^{left}{shift up}")
-    safe_cut()
-    StringUpper, Clipboard, Clipboard
-    send("^v")
-    run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-downcase_word()
-{
-    run_hooks("pre_command_hook")
-    send("^{right}{shift down}^{left}{shift up}")
-    safe_cut()
-    StringLower, Clipboard, Clipboard
-    send("^v")
-    run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-capitalize_word()
-{
-    run_hooks("pre_command_hook")
-    send("{shift down}^{right}{shift up}")
-    safe_cut()
-    StringUpper, Clipboard, Clipboard, T
-    send("^v")
-    run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-;; ---------------
-;; inserting pairs
-;; ---------------
-
-;; insert ARG parentheses
-insert_parentheses()
-{
-    command_pair("(){left}")
-}
-
-;; insert comment (/* `!!' */)
-insert_comment()
-{
-    command_pair("/*  */{left}{left}{left}")
-}
-
-;; continue multiline comment ARG lines (\n * `!!')
-indent_new_comment_line()
-{
-    command_simple("{enter} *{space}", 1, 0, 1)
-}
-
-;; ------
-;; others
-;; ------
-
-;; launch cmd.exe
-shell()
-{
-    run_hooks("pre_command_hook")
-    Run, cmd.exe
     run_hooks("after_display_transition_hook")
-    run_hooks("post_command_hook")
 }
 
-;; execute shell command (Win-r)
-shell_command()
-{
-    command_simple("#r", 0, 1, 0)
+dt_event_proc := RegisterCallback("dt_callback")
+
+DllCall("SetWinEventHook"
+    , "UInt", 0x00000003, "UInt", 0x00000003, "UInt", 0
+    , "UInt", dt_event_proc, "UInt", 0, "UInt", 0, "UInt", 0x0003, "UInt")
+
+;; -------------
+;; set/reset C-x
+;; -------------
+
+cx = 0
+
+set_cx()
+{ Global
+    cx := 1
+    ToolTip, C-x -, 1, 0, 1
 }
 
-;; add text properties (basically for MSWord)
-facemenu()
-{
-    command_simple("^d", 0, 1, 0)
+reset_cx()
+{ Global
+    cx := 0
+    ToolTip, , , , 1
 }
 
-;; help
-help()
-{
-    command_simple("{f1}", 0, 1, 0)
+add_hook("pre_command_hook", "reset_cx")
+
+;; --------------
+;; set/reset mark
+;; --------------
+
+mark = 0
+
+set_mark()
+{ Global
+    mark := 1
+    ToolTip, mark, 45, 0, 2
+}
+
+reset_mark()
+{ Global
+    mark := 0
+    ToolTip, , , , 2
+}
+
+add_hook("after_change_hook", "reset_mark")
+add_hook("after_display_transition_hook", "reset_mark")
+
+;; --------------
+;; digit argument
+;; --------------
+
+arg = 0
+arg_internal = 0
+
+set_digit_argument(n)
+{ Global
+    arg_internal := n
+    ToolTip, %arg_internal%, 1, 0, 1
+}
+
+;; retrive arg from arg_internal
+get_argument()
+{ Global
+    arg := arg_internal
+    arg_internal = 0
+    ToolTip, , , , 1
+}
+
+add_hook("pre_command_hook", "get_argument")
+
+;; -----------
+;; allocate tt
+;; -----------
+
+;; there are two ToolTips by default :
+;; 1 ... reserved by C-x / digit-argument
+;; 2 ... reserved by mark
+
+;; alloc_tt() allocates an id for the new ToolTip
+;; and returns it
+
+tt_count = 2
+
+alloc_tt()
+{ Global
+    tt_count++
+    Return tt_count
 }

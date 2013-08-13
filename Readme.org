@@ -27,6 +27,5 @@ tasktray icon. Keybinds are basically the same as Emacs.
 
 ** Customization
 
-Put all source files in the same directory, and edit
-"default_setting.ahk". Then compile it.
-
+Put all source files in the same directory, and edit "init.ahk". Then
+compile "ewow.ahk".

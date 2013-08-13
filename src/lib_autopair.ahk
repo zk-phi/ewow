@@ -20,7 +20,7 @@ smart_bracket()
 ;; wrap or insert bracesr
 smart_brace()
 {
-    command_pair("{shift down}[]{shift up}{left}")
+    command_pair("{{}{}}{left}")
 }
 
 ;; wrap or insert double quotes
