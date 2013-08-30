@@ -12,7 +12,7 @@
 ;; + ignored_frame() ... decide if EWOW should be disbaled
 ;; => configure with "ignored_frames" variable
 
-;; + last_command ... keys sent last
+;; + last_command ... keys sent in this command
 ;; + arg          ... digit argument (> 0)
 ;; => automatically updated
 
@@ -27,6 +27,7 @@
 ;; after_change_hook
 ;; => use "add_hook" and "run_hooks"
 
+;; before_send_hook
 ;; after_send_hook
 ;; after_display_transition_hook
 ;; => use "add_hook". runned automatically
@@ -71,6 +72,7 @@ post_command_hook =
 after_change_hook =
 ;; => call manually
 
+before_send_hook =
 after_send_hook =
 ;; => called by send()
 
@@ -117,10 +119,11 @@ last_command =
 send(key)
 { Global
     last_command := key
-    If !read_char_waiting
-        Send, %key%
-    Else
+    run_hooks("before_send_hook")
+    If read_char_waiting
         read_char_waiting = 0
+    Else
+        Send, %last_command%
     run_hooks("after_send_hook")
 }
 

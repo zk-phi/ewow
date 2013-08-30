@@ -1,31 +1,218 @@
 * EWOW -- Emacs Way of Operating Windows
 ** Features
 
-+ allows Emacs-like keybinds (almost) everywhere on Windows
-+ some commands that Windows does not support are supported
++ allows Emacs-like commands and keybinds (almost) everywhere on
+  Windows
   - word-wise operations
   - kill-line
-  - jump to the line-number
   - transpose chars, words, lines
-  - auto insertion of parens
-  - and so on ...
+  - autopair
+  - keyboard macros
+  - ... etc
+
 + prefix digit-argument is available for some commands
   - ex. C-3 C-n -> go 3 lines down
-+ Emacs-style region selection (ie. mark)
-+ and even KEYBOARD MACROS !
+
++ Emacs-style region selection (i.e. set-mark-command)
+
++ and so on ...
 
 ** Usage
 
-Just download the compiled binary and run it. You may exit EWOW from
-tasktray icon. Keybinds are basically the same as Emacs.
+Install AutoHotKey_L, and then run "ewow.ahk".
 
-** Known Limitations
+** Configuration
+*** Abstract
 
-+ mouse clicks are not recorded in macro
-+ command "goto-line", "upcase-xxx", "downcase-xxx" are not compatible
-  with macro
+EWOW is a set of AutoHotKey scripts :
 
-** Customization
+- fundamental.ahk :: provides a bunch of functions and variables, that
+                     are useful to implement emacs-like commands and
+                     keybinds
 
-Put all source files in the same directory, and edit "init.ahk". Then
-compile "ewow.ahk".
+- commands.ahk :: provides basic emacs commands implementation
+
+- init.ahk :: _PUT YOUR SETTINGS HERE_.
+
+- keybinds.ahk :: provides the default keybinds
+
+Actually, "ewow.ahk" just does load them in sequence. You may write
+your own AHK script in "init.ahk", so that "ewow.ahk" will load it.
+An example setting is already written and comment-outed in "init.ahk".
+
+*** Very Short Introduction to AHK
+
+AHK script is basically consist of two parts :
+
+- auto-exec section
+- hotkeys
+
+they must be in the order. That is, you CANNOT write auto-exec section
+after hotkeys settings.
+
+**** auto-exec section
+
+In auto-exec section, you may define/call functions, and set
+variables. Calling functions and setting variables are as easy as :
+
+: foo()      ; function call
+: bar = baz  ; substitution
+
+Usually you do not need to define functions to configure EWOW. If you
+need, please read AHK manuals.
+
+You also may load other EWOW packages in auto-execution section :
+
+: #Include evil.ahk
+
+**** hotkeys
+
+Hotkeys are, like keybinds in emacs. Binding a key is done with only a
+line of AHK script :
+
+: ^f:: forward_char()
+
+The line above binds "C-f" to "forward_char" command. The letter "^"
+indicates that "f" is modified by "Ctrl" key. "+" indicates "Shift",
+"!" indicates "Alt", similarly. Commands available by default are
+listed in "keybinds.ahk".
+
+You may also define conditional keybinds with "#If" directive :
+
+: #If !ignored_frame() && !cx
+: ^f:: forward_char()
+:
+: #If !ignored_frame() && cx
+: ^f:: find_file()
+
+The example above binds "C-f" to "forward_char" command, when "C-x" is
+not prefixed, and the cursor is not in "ignored_frames" which is
+described later. If we are not in "ignored_frames" but "C-x" is
+prefixed, then "C-f" is bind to "find_file" command. Otherwise (when
+we are in "ignored_frames"), "C-f" is not bound. That is, "Ctrl-f" is
+sent normally.
+
+*** Functions and Variables provided in fundamental.ahk
+
+Following functions and variables are provided in
+"fundamental.ahk". You may call or set them in "init.ahk" to do some
+configurations.
+
+- configurable variables
+
+  + ignored_frames :: a list of window-classes in which EWOW should be
+                      disabled. for example, we usually do not want
+                      get EWOW enabled in Emacs window.
+
+- read-only variables
+
+  + cx :: true when "C-x" is prefixed.
+  + mark :: true when the mark is active.
+
+- functions
+
+  + ignored_frame() :: return if we are in "ignored_frames"
+
+** Writing Extensions
+
+If you are familiar with AHK, it is easy to write your own commands or
+packages. Because commands are just AHK functions, and packages are
+basically set of commands and variables.
+
+Though, there are some differences to be cared. PLEASE READ
+description below, before start writing.
+
+*** Functions and Variables Provided Especially for Developers
+
+- functions
+
+  + send(str) :: a wrapper function of AHK "Send" operation. DO USE
+                 THIS instead of normal "Send" operation, so that sent
+                 keys are recorded in keyboard macros.
+
+  + add_hook(var, func) :: like add-hook function in Emacs. available
+                          hooks are described later.
+
+  + remove_hook(var, func) :: like remove-hook in Emacs.
+
+  + run_hooks(var) :: like run-hooks in Emacs but accepts only one
+                      hook.
+
+  + alloc_tt() :: allocate a "ToolTip" ID and return it. when you use
+                  "ToolTip" operation, please DO USE the ID provided
+                  by this function as "WhichToolTip" value. there is
+                  no free_tt() function, so please DO REUSE the
+                  provided ID.
+
+  + read_char() :: steal a key input and return it, without sending it
+                   to Windows nor invoking commands.
+
+  + set_mark() :: set and activate mark.
+
+  + reset_mark() :: deactivate mark.
+
+- read-only variables
+
+  + last_command :: the last key sequence sent to Windows.
+
+  + arg :: prefixed digit argument is stored in integer.
+
+- hooks
+
+  + pre_command_hook :: hook which MUST BE CALLED at the beginning of
+                        command.
+
+  + post_command_hook :: hook which MUST BE CALLED at the end of
+                         command.
+
+  + after_change_hook :: hook which MUST BE CALLED just after changes.
+
+  + before_send_hook :: hook which runs before sending keys to
+                        Windows, automatically. you may assume that
+                        the variable "last_command" is set to the key
+                        sequence going to be sent.
+
+  + after_send_hook :: hook which runs after sending keys to Windows,
+                       automatically.
+
+  + after_display_transition_hook :: hook which runs when the active
+                                     window is switched
+
+*** Things You MUST Do
+
++ use send() function instead of "Send"
+
++ use alloc_tt() function when you use "ToolTip"
+
++ call "pre_command_hook", "post_command_hook" and "after_change_hook"
+  from your commands manually
+
+  : my_command()
+  : {
+  :     run_hooks("pre_command_hook")
+  :     an_operation()
+  :     run_hooks("post_command_hook")
+  : }
+
++ use local variables as well as you can, to save namespace.
+
+*** Thigs You CAN Do
+
++ hook some functions with "add_hook"
+
+  : add_hook("pre_command_hook", "my_pkg_pre_command_function")
+
++ run some hooks with "run_hoks"
+
++ use read_char() function to steal a key input
+
++ "last_command" and "arg" informations
+
+** Known Limitations, Bugs
+
++ Some commands and mouse clicks are not recorded in macro
+  - "some commands" are -- commands that do not send keys to Windows
+
++ Registers are not available
+
++ Search commands in Vi mode (like "f", "t") do not expand region
