@@ -81,7 +81,6 @@ You may also define conditional keybinds with "#If" directive :
 
 : #If !ignored_frame() && !cx
 : ^f:: forward_char()
-:
 : #If !ignored_frame() && cx
 : ^f:: find_file()
 
