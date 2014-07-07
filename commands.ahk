@@ -61,7 +61,28 @@ self_send_command()
 mouse_event_command()
 {
     MouseGetPos, x, y
-    key = {Click, L, , %x%, %y%, 0}{%A_ThisHotKey%}
+
+    StringSplit, str, A_ThisHotKey, %A_Space%
+
+    If str1 = LButton
+        key = L
+    Else If str1 = RButton
+        key = R
+    Else If str1 = MButton
+        key = M
+    Else If str1 = XButton1
+        key = X1
+    Else If str1 = XButton2
+        key = X2
+    Else
+        Return
+
+    If str0 = 2
+        updn = U
+    Else
+        updn = D
+
+    key = {Click, %key%, %updn%, %x%, %y%, 1}
     command_simple(key, 0, 1)
 }
 
@@ -155,7 +176,7 @@ kmacro_call()
         varname := kmacro%A_Index%
         Send, %varname%
     }
-    Send, {Click, L, , %x%, %y%, 0}
+    Send, {Click, , , %x%, %y%, 0}
 }
 
 add_hook("after_send_hook", "kmacro_after_send_function")
