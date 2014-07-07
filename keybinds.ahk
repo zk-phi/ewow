@@ -631,6 +631,11 @@ rbutton:: mouse_event_command()
 mbutton:: mouse_event_command()
 xbutton1:: mouse_event_command()
 xbutton2:: mouse_event_command()
+lbutton up:: mouse_event_command()
+rbutton up:: mouse_event_command()
+mbutton up:: mouse_event_command()
+xbutton1 up:: mouse_event_command()
+xbutton2 up:: mouse_event_command()
 
 space:: self_send_command()
 

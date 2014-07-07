@@ -122,10 +122,12 @@ set_cx_command()
 
 ;; send ESC and reset variables
 keyboard_quit()
-{
+{ Global
     run_hooks("pre_command_hook")
-    send("{escape}")
-    reset_mark()
+    If mark
+        reset_mark()
+    Else
+        send("{escape}")
     run_hooks("post_command_hook")
 }
 

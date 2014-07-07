@@ -74,12 +74,13 @@
 #SingleInstance
 #NoEnv
 #InstallKeybdHook
+#InstallMouseHook
 #UseHook
 #MaxHotkeysPerInterval 100
 
 SetBatchLines, -1
 SetKeyDelay, 0
-Sendmode Input
+Sendmode, Event
 
 ;; -----------------
 ;; Utility Functions
