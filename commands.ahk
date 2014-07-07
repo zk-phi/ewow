@@ -148,12 +148,14 @@ kmacro_end()
 
 kmacro_call()
 { Global
-    Local varname
+    Local varname, x, y
+    MouseGetPos, x, y
     Loop, %kmacro_count%
     {
         varname := kmacro%A_Index%
         Send, %varname%
     }
+    Send, {Click, L, , %x%, %y%, 0}
 }
 
 add_hook("after_send_hook", "kmacro_after_send_function")
