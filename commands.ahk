@@ -82,7 +82,7 @@ mouse_event_command()
     Else
         updn = D
 
-    key = {Click, %key%, %updn%, %x%, %y%, 1}
+    key = {Click, %key%, %x%, %y%, 1, %updn%}
     command_simple(key, 0, 1)
 }
 
@@ -176,7 +176,7 @@ kmacro_call()
         varname := kmacro%A_Index%
         Send, %varname%
     }
-    Send, {Click, , , %x%, %y%, 0}
+    Send, {Click, , %x%, %y%, 0}
 }
 
 add_hook("after_send_hook", "kmacro_after_send_function")
