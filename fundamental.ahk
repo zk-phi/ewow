@@ -1,36 +1,71 @@
 ;; This script provides: fundamental functions, environment
 
-;; -------------------------
-;; what this script provides
-;; -------------------------
+;; <utility functions>
 
-;; + send()       ... a wrapper function of "Send"
-;; => ALWAYS USE THIS FUNCTION
+;; - foreach(list, fnname)               ... apply function to all elements in a list
+;; - add_to_list(listname, element)      ... add an element to a list
+;; - remove_from_list(listname, element) ... remove an element from a list
 
-;; + read_char() ... steals one event and returns it
+;; - make_str(str, n) ... repeat str n-times
 
-;; + ignored_frame() ... decide if EWOW should be disbaled
+;; - funcall(fnname) ... call fucntion with no arguments
+
+;; <functions>
+
+;; - ignored_frame() ... decide if EWOW should be quiet
 ;; => configure with "ignored_frames" variable
 
-;; + last_command ... keys sent in this command
-;; + arg          ... digit argument (> 0)
-;; => automatically updated
+;; - alloc_tt() ... get an id for ToolTip
 
-;; + cx           ... true if C-x is prefixed
-;; + mark         ... true if mark is active
-;; => use setter functions
+;; <commands>
 
-;; + alloc_tt() ... allocate a tooltip id
+;; - send(str) ... a wrapper function of "Send"
+;; => ALWAYS USE THIS FUNCTION TO SEND KEYS TO WINDOWS
 
-;; pre_command_hook
-;; post_command_hook
-;; after_change_hook
-;; => use "add_hook" and "run_hooks"
+;; - read_char() ... steal one event from send() and return it
 
-;; before_send_hook
-;; after_send_hook
-;; after_display_transition_hook
-;; => use "add_hook". runned automatically
+;; <hooks>
+
+;; - pre_command_hook  ... all commands must run at the very beginning
+;; - post_command_hook ... all commands must run at the very end
+;; - after_change_hook ... all commands must run just after changes
+;; => use "run_hooks" to run
+
+;; - before_send_hook              ... automatically run before send()
+;; - after_send_hook               ... automatically run after send()
+;; - after_display_transition_hook ... automatically run after display transitions
+;; => run automatically
+
+;; - add_hook(hookname, fnname)    ... add a function to a hook
+;; - remove_hook(hookname, fnname) ... remove a function from a hook
+;; - run_hooks(hookname)           ... run all functions in a hook
+
+;; <variables>
+
+;; - last_command   ... the last event (being) sent with send()
+;; => you may assume that this variable is already updated in before_send_hook
+
+;; <settings>
+
+;; - ignored_frames ... list of window-classes in which EWOW should be quiet
+
+;; --------------
+;; (AHK Tutorial)
+;; --------------
+
+;; funname()
+;; { Global                     <- use global variables
+;;     Local foo                <- but keep variable "foo" local
+;;     foo = foo                <- set foo to a string literal "foo"
+;;     foo = %foo%              <- set foo to a foo's value
+;;     foo := foo               <- (equivalent)
+;;     foo = %foo%bar           <- concatenate foo's value and a string literal "bar"
+;;     foo .= bar               <- (equivalent)
+;;     MsgBox foo is %foo%      <- call command MsgBox with "foo is %foo%"
+;;     MsgBox % "foo is " . foo <- equivalent to the previous line
+;;     message("foo is " . foo) <- call function message with "foo is %foo%"
+;;     message(foo is %foo%)     <- (NO GOOD)
+;; }
 
 ;; ------------------
 ;; AHK configurations
@@ -46,25 +81,52 @@ SetBatchLines, -1
 SetKeyDelay, 0
 Sendmode Input
 
-;; --------------------
-;; check ignored frames
-;; --------------------
+;; -----------------
+;; Utility Functions
+;; -----------------
 
-ignored_frames = ConsoleWindowClass,cygwin/x X rl-xterm-XTerm-0,mintty,MEADOW,Vim,Emacs,XEmacs,SunAwtFrame,Xming X,VMPlayerFrame
-
-;; decide if ewow should be quiet
-ignored_frame()
+foreach(list, fnname)
 { Global
-    Local class
-    WinGetClass, class, A
-    If class in %ignored_frames%
-        Return 1
+    Loop, Parse, list, `,, `r `n
+        %fnname%(A_LoopField)
+}
+
+add_to_list(listname, element)
+{ Global
+    Local list
+    list := %listname%        ; list = (eval (symbol-value 'listname))
+    If element in %list%
+        Return
+    If list !=
+        %listname% = %list%,%element%
     Else
-        Return 0
+        %listname% = %element%
+}
+
+remove_from_list(listname, element)
+{ Global
+    Local list, regex
+    list := %listname%
+    regex = ,?%element%
+    %listname% := RegExReplace(list, regex, "")
+}
+
+funcall(fnname)
+{ Global
+    If isFunc(fnname)
+        %fnname%()
+}
+
+make_str(str, n)
+{
+    out =
+    Loop, %n%
+        out .= str
+    Return out
 }
 
 ;; -----
-;; hooks
+;; Hooks
 ;; -----
 
 pre_command_hook =
@@ -79,46 +141,32 @@ after_send_hook =
 after_display_transition_hook =
 ;; => called on WinEventHook
 
-run_hooks(name)
+run_hooks(hookname)
 { Global
-    Loop, Parse, %name%, `,, `r `n
-    {
-        If isFunc(A_LoopField)
-            %A_LoopField%()
-    }
+    foreach(%hookname%, "funcall")
 }
 
-remove_hook(name, fun)
-{ Global
-    Local list, regex
-    list := %name%
-    regex = ,?%fun%
-    %name% := RegExReplace(list, regex, "")
+remove_hook(hookname, fnname)
+{
+    remove_from_list(hookname, fnname)
 }
 
-add_hook(name, fun)
-{ Global
-    Local list
-    list := %name%
-    If fun in %list%
-        Return
-    If list !=
-        %name% = %list%,%fun%
-    Else
-        %name% = %fun%
+add_hook(hookname, fnname)
+{
+    add_to_list(hookname, fnname)
 }
 
-;; ---------
-;; send keys
-;; ---------
+;; ----
+;; Send
+;; ----
 
 read_char_waiting = 0
 last_command =
 
 ;; a wrapper function of "Send"
-send(key)
+send(str)
 { Global
-    last_command := key
+    last_command := str
     run_hooks("before_send_hook")
     If read_char_waiting
         read_char_waiting = 0
@@ -136,7 +184,7 @@ read_char()
 }
 
 ;; -------------------------
-;; detect display transition
+;; Detect Display Transition
 ;; -------------------------
 
 ;; taken from
@@ -153,82 +201,31 @@ DllCall("SetWinEventHook"
     , "UInt", 0x00000003, "UInt", 0x00000003, "UInt", 0
     , "UInt", dt_event_proc, "UInt", 0, "UInt", 0, "UInt", 0x0003, "UInt")
 
-;; -------------
-;; set/reset C-x
-;; -------------
-
-cx = 0
-
-set_cx()
-{ Global
-    cx := 1
-    ToolTip, C-x -, 1, 0, 1
-}
-
-reset_cx()
-{ Global
-    cx := 0
-    ToolTip, , , , 1
-}
-
-add_hook("pre_command_hook", "reset_cx")
-
 ;; --------------
-;; set/reset mark
+;; Ignored Frames
 ;; --------------
 
-mark = 0
+ignored_frames = ConsoleWindowClass,cygwin/x X rl-xterm-XTerm-0,mintty,MEADOW,Vim,Emacs,XEmacs,SunAwtFrame,Xming X,VMPlayerFrame
 
-set_mark()
+;; decide if ewow should be quiet
+ignored_frame()
 { Global
-    mark := 1
-    ToolTip, mark, 45, 0, 2
+    Local class
+    WinGetClass, class, A
+    If class in %ignored_frames%
+        Return 1
+    Else
+        Return 0
 }
 
-reset_mark()
-{ Global
-    mark := 0
-    ToolTip, , , , 2
-}
-
-add_hook("after_change_hook", "reset_mark")
-add_hook("after_display_transition_hook", "reset_mark")
-
-;; --------------
-;; digit argument
-;; --------------
-
-arg = 0
-arg_internal = 0
-
-set_digit_argument(n)
-{ Global
-    arg_internal := n
-    ToolTip, %arg_internal%, 1, 0, 1
-}
-
-;; retrive arg from arg_internal
-get_argument()
-{ Global
-    arg := arg_internal
-    arg_internal = 0
-    ToolTip, , , , 1
-}
-
-add_hook("pre_command_hook", "get_argument")
-
-;; -----------
-;; allocate tt
-;; -----------
-
-;; there are two ToolTips by default :
-;; 1 ... reserved by C-x / digit-argument
-;; 2 ... reserved by mark
+;; -----------------
+;; Manage ToolTip ID
+;; -----------------
 
 ;; alloc_tt() allocates an id for the new ToolTip
 ;; and returns it
 
-tt_count = 2
+tt_count = 0
 
 alloc_tt()
 { Global

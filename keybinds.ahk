@@ -626,6 +626,12 @@ m:: self_insert_command()
 ;; ------------
 #If !dummy && !ignored_frame() && !cx
 
+lbutton:: mouse_event_command()
+rbutton:: mouse_event_command()
+mbutton:: mouse_event_command()
+xbutton1:: mouse_event_command()
+xbutton2:: mouse_event_command()
+
 space:: self_send_command()
 
 tab:: indent_for_tab_command()

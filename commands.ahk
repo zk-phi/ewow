@@ -1,5 +1,7 @@
 ;; This script provides: command skeletons
 
+#Include commands_util.ahk
+
 kmacro_tt := alloc_tt()
 
 ;; ---------
@@ -10,80 +12,12 @@ safe_cut()
 {
     ClipBoard =
     send("^x")
-    ClipWait, 0.5
+    ClipWait, 0.5              ; confirm that the ClipBoard is updated
 }
 
-;; -----------------
-;; command skeletons
-;; -----------------
-
-;; command that simply sends a key or calls a function
-command_simple(str, change, repeatable)
-{ Global
-    run_hooks("pre_command_hook")
-    If isFunc(str)
-        Loop, % (arg && repeatable) ? arg : 1
-            %str%()
-    Else
-        Loop, % (arg && repeatable) ? arg : 1
-            send(str)
-    If change
-        run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-;; a command that moves cursor position
-;; with or without expanding region
-command_motion(str, repeatable)
-{ Global
-    run_hooks("pre_command_hook")
-    If mark
-        str = {shift down}%str%{shift up}
-    Loop, % (arg && repeatable) ? arg : 1
-        send(str)
-    run_hooks("post_command_hook")
-}
-
-;; command that sends key A, B, and C in sequence
-;; with only B repeated ARG times
-command_abc(a, b, c, change)
-{ Global
-    run_hooks("pre_command_hook")
-    send(a)
-    Loop, % arg ? arg : 1
-        send(b)
-    send(c)
-    If change
-        run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-;; command that inserts a balanced expression
-command_pair(str)
-{ Global
-    run_hooks("pre_command_hook")
-    If mark
-        send("^x")
-    Loop, % arg ? arg : 1
-        send(str)
-    If mark
-        send("^v")
-    run_hooks("after_change_hook")
-    run_hooks("post_command_hook")
-}
-
-;; command that selects something
-command_mark(str)
-{
-    run_hooks("pre_command_hook")
-    send(str)
-    set_mark()
-    run_hooks("post_command_hook")
-}
-
-;; ----------------
-;; alttab detection
-;; ----------------
+;; --------------
+;; alttab command
+;; --------------
 
 ;; Usage:
 ;;
@@ -121,6 +55,14 @@ self_send_command()
 {
     tmp = {%A_ThisHotKey%}
     command_simple(tmp, 0, 1)
+}
+
+;; send mouse event itself
+mouse_event_command()
+{
+    MouseGetPos, x, y
+    key = {Click, L, , %x%, %y%, 0}{%A_ThisHotKey%}
+    command_simple(key, 0, 1)
 }
 
 ;; digit argument
