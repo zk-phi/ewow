@@ -80,9 +80,8 @@
 
 SetBatchLines, -1
 SetKeyDelay, 0
-Sendmode, Input
-;; Sendmode, Event
-;; CoordMode, Mouse, Screen
+Sendmode, Event
+CoordMode, Mouse, Screen
 
 ;; -----------------
 ;; Utility Functions
