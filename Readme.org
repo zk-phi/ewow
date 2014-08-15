@@ -1,7 +1,7 @@
 * EWOW -- Emacs Way of Operating Windows
 ** Features
 
-+ allows Emacs-like commands and keybinds (almost) everywhere on
++ allows Emacs-like commands and keybinds (almost) everywhere in
   Windows
 
   - keyboard macros
