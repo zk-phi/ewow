@@ -621,11 +621,12 @@ m:: self_insert_command()
 .:: self_insert_command()
 /:: self_insert_command()
 
-;; ------------
-;; special keys
-;; ------------
+;; -------------
+;; mouse buttons
+;; -------------
 #If !dummy && !ignored_frame() && !cx
 
+;; plain
 lbutton:: mouse_event_command()
 rbutton:: mouse_event_command()
 mbutton:: mouse_event_command()
@@ -636,6 +637,47 @@ rbutton up:: mouse_event_command()
 mbutton up:: mouse_event_command()
 xbutton1 up:: mouse_event_command()
 xbutton2 up:: mouse_event_command()
+
+;; ctrl
+^lbutton:: mouse_event_command()
+^rbutton:: mouse_event_command()
+^mbutton:: mouse_event_command()
+^xbutton1:: mouse_event_command()
+^xbutton2:: mouse_event_command()
+^lbutton up:: mouse_event_command()
+^rbutton up:: mouse_event_command()
+^mbutton up:: mouse_event_command()
+^xbutton1 up:: mouse_event_command()
+^xbutton2 up:: mouse_event_command()
+
+;; meta
+!lbutton:: mouse_event_command()
+!rbutton:: mouse_event_command()
+!mbutton:: mouse_event_command()
+!xbutton1:: mouse_event_command()
+!xbutton2:: mouse_event_command()
+!lbutton up:: mouse_event_command()
+!rbutton up:: mouse_event_command()
+!mbutton up:: mouse_event_command()
+!xbutton1 up:: mouse_event_command()
+!xbutton2 up:: mouse_event_command()
+
+;; shift
++lbutton:: mouse_event_command()
++rbutton:: mouse_event_command()
++mbutton:: mouse_event_command()
++xbutton1:: mouse_event_command()
++xbutton2:: mouse_event_command()
++lbutton up:: mouse_event_command()
++rbutton up:: mouse_event_command()
++mbutton up:: mouse_event_command()
++xbutton1 up:: mouse_event_command()
++xbutton2 up:: mouse_event_command()
+
+;; ------------
+;; special keys
+;; ------------
+#If !dummy && !ignored_frame() && !cx
 
 space:: self_send_command()
 

@@ -62,27 +62,27 @@ mouse_event_command()
 {
     MouseGetPos, x, y
 
-    StringSplit, str, A_ThisHotKey, %A_Space%
+    RegExMatch(A_ThisHotKey, "(\W*)(\w*)( up)?", res)
 
-    If str1 = LButton
+    If res2 = LButton
         key = L
-    Else If str1 = RButton
+    Else If res2 = RButton
         key = R
-    Else If str1 = MButton
+    Else If res2 = MButton
         key = M
-    Else If str1 = XButton1
+    Else If res2 = XButton1
         key = X1
-    Else If str1 = XButton2
+    Else If res2 = XButton2
         key = X2
     Else
         Return
 
-    If str0 = 2
-        updn = U
-    Else
+    If res3 =
         updn = D
+    Else
+        updn = U
 
-    key = {Click, %key%, %x%, %y%, 1, %updn%}
+    key = %res1%{Click, %key%, %x%, %y%, 1, %updn%}
     command_simple(key, 0, 1)
 }
 
