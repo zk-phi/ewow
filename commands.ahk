@@ -4,6 +4,8 @@
 
 kmacro_tt := alloc_tt()
 
+kill_ring_size = 100
+
 ;; ---------
 ;; utilities
 ;; ---------
@@ -13,6 +15,29 @@ safe_cut()
     ClipBoard =
     send("^x")
     ClipWait, 0.5              ; confirm that the ClipBoard is updated
+}
+
+;; ---------
+;; kill_ring
+;; ---------
+
+kill_ring_pointer = 0
+
+kill_ring_push()
+{ Global
+    kill_ring_pointer := mod(kill_ring_pointer + 1, kill_ring_size)
+    kill_ring%kill_ring_pointer% := ClipBoard
+}
+
+kill_ring_pop()
+{ Global
+    kill_ring_pointer := mod(kill_ring_pointer + kill_ring_size - 1, kill_ring_size)
+    ClipBoard := kill_ring%kill_ring_pointer%
+}
+
+kill_ring_restore()
+{ Global
+    ClipBoard := kill_ring%kill_ring_pointer%
 }
 
 ;; --------------
@@ -422,6 +447,7 @@ kill_ring_save()
     run_hooks("pre_command_hook")
     send("^c")
     reset_mark()
+    kill_ring_push()
     run_hooks("post_command_hook")
 }
 
@@ -429,12 +455,25 @@ kill_ring_save()
 kill_region()
 {
     command_simple("^x", 1, 0)
+    kill_ring_push()
 }
 
 ;; paste ARG times (C-v)
 yank()
 {
     command_simple("^v", 1, 1)
+}
+
+;; pop kill_ring ARG times (M-v)
+yank_pop()
+{
+    run_hooks("pre_command_hook")
+    send("^z")
+    Loop, % arg ? arg : 1
+        kill_ring_pop()
+    send("^v")
+    run_hooks("after_change_hook")
+    run_hooks("post_command_hook")
 }
 
 ;; delete ARG chars forward (Del)
@@ -453,24 +492,28 @@ delete_backward_char()
 kill_word()
 {
     command_abc("", "{shift down}^{right}{shift up}", "^x", 1)
+    kill_ring_push()
 }
 
 ;; delete ARG words "backward"
 backward_kill_word()
 {
     command_abc("", "{shift down}^{left}{shift up}", "^x", 1)
+    kill_ring_push()
 }
 
 ;; delete this line "forward"
 kill_line()
 {
     command_simple("{shift down}{end}{shift up}^x", 1, 0)
+    kill_ring_push()
 }
 
 ;; delete whole line
 kill_whole_line()
 {
     command_simple("{home}{shift down}{end}{right}{shift up}^x", 1, 0)
+    kill_ring_push()
 }
 
 ;; ------------------
@@ -521,18 +564,21 @@ redo()
 transpose_chars()
 {
     command_abc("{left}{shift down}{right}{shift up}^x", "{right}", "^v", 1)
+    kill_ring_restore()
 }
 
 ;; transpose ARG words
 transpose_words()
 {
     command_abc("{left}^{right}{shift down}^{left}{shift up}^x", "^{right}", "^v", 1)
+    kill_ring_restore()
 }
 
 ;; transpose ARG lines
 transpose_lines()
 {
     command_abc("{up}{home}{shift down}{down}{shift up}^x", "{down}", "^v", 1)
+    kill_ring_restore()
 }
 
 ;; replace (C-h)

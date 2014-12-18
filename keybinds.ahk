@@ -359,7 +359,7 @@ right:: next_window()           ; next-buffer
 !e:: move_end_of_line()         ; forward-sentence
 !r:: self_insert_command()
 !t:: transpose_words()
-!y:: yank()                     ; yank-pop
+!y:: yank_pop()
 !u:: upcase_word()
 !i:: indent_for_tab_command()   ; tab-to-tab-stop
 !o:: facemenu()                 ; (prefix)
