@@ -19,8 +19,8 @@
 
 ;; <commands>
 
-;; - send(str) ... a wrapper function of "Send"
-;; => ALWAYS USE THIS FUNCTION TO SEND KEYS TO WINDOWS
+;; - send(str) ... a wrapper function of "Send", either call STR as a function or send STR
+;; => ALWAYS USE THIS FUNCTION TO INTERACT WITH WINDOWS, SO THAT IT'S RECORDED IN MACROS
 
 ;; - read_char() ... steal one event from send() and return it
 
@@ -71,7 +71,6 @@
 ;; AHK configurations
 ;; ------------------
 
-#SingleInstance
 #NoEnv
 #InstallKeybdHook
 #InstallMouseHook
@@ -172,6 +171,8 @@ send(str)
     run_hooks("before_send_hook")
     If read_char_waiting
         read_char_waiting = 0
+    Else If isFunc(last_command)
+        %last_command%()
     Else
         Send, %last_command%
     run_hooks("after_send_hook")
