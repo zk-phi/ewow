@@ -381,7 +381,7 @@ right:: next_window()           ; next-buffer
 !z:: delete_char()              ; zap-to-char
 !x:: self_insert_command()
 !c:: capitalize_word()
-!v:: scroll_down()
+!v:: scroll_up()
 !b:: backward_word()
 !n:: self_insert_command()
 !m:: move_beginning_of_line()   ; back-to-indentation
@@ -494,7 +494,7 @@ right:: next_window()           ; next-buffer
 ^z:: suspend_frame()
 ^x:: set_cx_command()
 ^c:: self_insert_command()
-^v:: scroll_up()
+^v:: scroll_down()
 ^b:: backward_char()
 ^n:: next_line()
 ^m:: self_insert_command()
